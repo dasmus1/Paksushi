@@ -612,10 +612,7 @@ export default function App() {
               Войти
             </button>
           </div>
-          <div style={{marginTop:20,background:bgCard,borderRadius:12,border:`1px solid ${brd}`,padding:"12px 16px",fontSize:12,color:mutedC,lineHeight:1.7}}>
-            👨‍💼 <strong style={{color:clr}}>Администратор</strong> — управление заказами и меню<br/>
-            👑 <strong style={{color:YELLOW}}>Владелец</strong> — полный доступ + история удалённых
-          </div>
+
         </div>
       </div>
     );

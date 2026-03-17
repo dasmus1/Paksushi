@@ -73,12 +73,16 @@ const loadOrdersFromCloud = async (): Promise<any[]> => {
   } catch(e) { console.error("Firebase load orders:", e); return []; }
 };
 
-// Генерация уникального номера заказа: ПС-XXXX
+// Генерация уникального номера заказа: ПС-XXXX (порядковый)
 const generateOrderNumber = (): string => {
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-  let code = "";
-  for (let i = 0; i < 4; i++) code += chars[Math.floor(Math.random() * chars.length)];
-  return `ПС-${code}`;
+  try {
+    const current = parseInt(localStorage.getItem("paksushi_order_counter") || "1000");
+    const next = current + 1;
+    localStorage.setItem("paksushi_order_counter", String(next));
+    return `ПС-${next}`;
+  } catch {
+    return `ПС-${Math.floor(1000 + Math.random() * 9000)}`;
+  }
 };
 
 const YELLOW = "#f5c518";

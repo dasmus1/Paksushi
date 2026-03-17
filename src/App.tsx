@@ -138,7 +138,7 @@ const saveOrderHistory = (phone: string, history: OrderRecord[]) =>
   localStorage.setItem(`paksushi_history_${phone}`, JSON.stringify(history.slice(0, 20))); // храним последние 20
 
 // Меню с хорошими фотографиями для каждой позиции
-type MenuItem = { id:number; name:string; price:number; isDrink?:boolean; img:string; note?:string; desc?:string };
+type MenuItem = { id:number; name:string; price:number; isDrink?:boolean; noDiscount?:boolean; img:string; note?:string; desc?:string };
 type MenuData = Record<string, MenuItem[]>;
 
 const DEFAULT_MENU: MenuData = {
@@ -165,30 +165,30 @@ const DEFAULT_MENU: MenuData = {
     { id:20, name:"Гункан",                price:1290, note:"10 шт", desc:"Традиционный гункан с лососем и икрой", img:"https://loremflickr.com/400/300/gunkan,sushi?lock=20" },
   ],
   "🍔 Бургер": [
-    { id:21, name:"Бургер куриный",        price:1190, desc:"Сочная куриная котлета, салат, томат, соус", img:"https://loremflickr.com/400/300/chicken,burger?lock=21" },
-    { id:22, name:"Чизбургер куриный",     price:1390, desc:"Куриная котлета с плавленым сыром чеддер", img:"https://loremflickr.com/400/300/cheeseburger,chicken?lock=22" },
-    { id:23, name:"Биг Чизбургер куриный", price:1690, desc:"Двойная куриная котлета с двойным сыром", img:"https://loremflickr.com/400/300/burger,big?lock=23" },
-    { id:24, name:"Бургер говяжий",        price:1290, desc:"Сочная говяжья котлета 100% мясо, соус", img:"https://loremflickr.com/400/300/beef,burger?lock=24" },
-    { id:25, name:"Чизбургер говяжий",     price:1490, desc:"Говяжья котлета с сыром и маринованным огурцом", img:"https://loremflickr.com/400/300/cheeseburger,beef?lock=25" },
-    { id:26, name:"Биг чизбургер говяжий", price:1790, desc:"Двойная говяжья котлета с двойным сыром чеддер", img:"https://loremflickr.com/400/300/burger,double?lock=26" },
+    { id:21, name:"Бургер куриный",        price:1190, noDiscount:true, desc:"Сочная куриная котлета, салат, томат, соус", img:"https://loremflickr.com/400/300/chicken,burger?lock=21" },
+    { id:22, name:"Чизбургер куриный",     price:1390, noDiscount:true, desc:"Куриная котлета с плавленым сыром чеддер", img:"https://loremflickr.com/400/300/cheeseburger,chicken?lock=22" },
+    { id:23, name:"Биг Чизбургер куриный", price:1690, noDiscount:true, desc:"Двойная куриная котлета с двойным сыром", img:"https://loremflickr.com/400/300/burger,big?lock=23" },
+    { id:24, name:"Бургер говяжий",        price:1290, noDiscount:true, desc:"Сочная говяжья котлета 100% мясо, соус", img:"https://loremflickr.com/400/300/beef,burger?lock=24" },
+    { id:25, name:"Чизбургер говяжий",     price:1490, noDiscount:true, desc:"Говяжья котлета с сыром и маринованным огурцом", img:"https://loremflickr.com/400/300/cheeseburger,beef?lock=25" },
+    { id:26, name:"Биг чизбургер говяжий", price:1790, noDiscount:true, desc:"Двойная говяжья котлета с двойным сыром чеддер", img:"https://loremflickr.com/400/300/burger,double?lock=26" },
   ],
   "🫓 Лаваш": [
-    { id:27, name:"Лаваш куриный",         price:1290, desc:"Хрустящий лаваш с куриным филе, свежими овощами и фри внутри", img:"https://loremflickr.com/400/300/lavash,wrap?lock=27" },
-    { id:28, name:"Лаваш куриный сыр",     price:1390, desc:"Лаваш с куриным филе, сыром, овощами и фри", img:"https://loremflickr.com/400/300/wrap,cheese?lock=28" },
+    { id:27, name:"Лаваш куриный",         price:1290, noDiscount:true, desc:"Хрустящий лаваш с куриным филе, свежими овощами и фри внутри", img:"https://loremflickr.com/400/300/lavash,wrap?lock=27" },
+    { id:28, name:"Лаваш куриный сыр",     price:1390, noDiscount:true, desc:"Лаваш с куриным филе, сыром, овощами и фри", img:"https://loremflickr.com/400/300/wrap,cheese?lock=28" },
   ],
   "🍗 Крылышки": [
-    { id:31, name:"Крылышки 8 шт",  price:1490, desc:"Хрустящие куриные крылышки в фирменном соусе", img:"https://loremflickr.com/400/300/chicken,wings?lock=31" },
-    { id:32, name:"Крылышки 16 шт", price:2790, desc:"Хрустящие куриные крылышки в фирменном соусе, большая порция", img:"https://loremflickr.com/400/300/chicken,wings?lock=32" },
-    { id:33, name:"Крылышки 24 шт", price:4280, desc:"Хрустящие крылышки — идеально для компании", img:"https://loremflickr.com/400/300/wings,crispy?lock=33" },
-    { id:34, name:"Крылышки 32 шт", price:5580, desc:"Максимальная порция для большой компании", img:"https://loremflickr.com/400/300/chicken,wings?lock=34" },
+    { id:31, name:"Крылышки 8 шт",  price:1490, noDiscount:true, desc:"Хрустящие куриные крылышки в фирменном соусе", img:"https://loremflickr.com/400/300/chicken,wings?lock=31" },
+    { id:32, name:"Крылышки 16 шт", price:2790, noDiscount:true, desc:"Хрустящие куриные крылышки в фирменном соусе, большая порция", img:"https://loremflickr.com/400/300/chicken,wings?lock=32" },
+    { id:33, name:"Крылышки 24 шт", price:4280, noDiscount:true, desc:"Хрустящие крылышки — идеально для компании", img:"https://loremflickr.com/400/300/wings,crispy?lock=33" },
+    { id:34, name:"Крылышки 32 шт", price:5580, noDiscount:true, desc:"Максимальная порция для большой компании", img:"https://loremflickr.com/400/300/chicken,wings?lock=34" },
   ],
   "🍟 Снэки": [
-    { id:35, name:"Фри",                  price:700,  desc:"Золотистая картошка фри, хрустящая снаружи", img:"https://loremflickr.com/400/300/french,fries?lock=35" },
-    { id:36, name:"Картофельные шарики",  price:700,  desc:"Хрустящие шарики из картофельного пюре", img:"https://loremflickr.com/400/300/potato,balls?lock=36" },
-    { id:37, name:"Нагетсы 8 шт",         price:1490, desc:"Сочные куриные нагетсы в панировке", img:"https://loremflickr.com/400/300/chicken,nuggets?lock=37" },
-    { id:38, name:"Корн дог 5 шт",        price:1290, desc:"Сосиски в кукурузном тесте на палочке", img:"https://loremflickr.com/400/300/corn,dog?lock=38" },
-    { id:39, name:"Сырные палочки 6 шт",  price:1290, desc:"Хрустящие палочки с тягучим сыром внутри", img:"https://loremflickr.com/400/300/mozzarella,sticks?lock=39" },
-    { id:40, name:"Соус",                 price:150,  desc:"Фирменный соус на выбор: чесночный, острый, барбекю", img:"https://loremflickr.com/400/300/sauce,dip?lock=40" },
+    { id:35, name:"Фри",                  price:700,  noDiscount:true, desc:"Золотистая картошка фри, хрустящая снаружи", img:"https://loremflickr.com/400/300/french,fries?lock=35" },
+    { id:36, name:"Картофельные шарики",  price:700,  noDiscount:true, desc:"Хрустящие шарики из картофельного пюре", img:"https://loremflickr.com/400/300/potato,balls?lock=36" },
+    { id:37, name:"Нагетсы 8 шт",         price:1490, noDiscount:true, desc:"Сочные куриные нагетсы в панировке", img:"https://loremflickr.com/400/300/chicken,nuggets?lock=37" },
+    { id:38, name:"Корн дог 5 шт",        price:1290, noDiscount:true, desc:"Сосиски в кукурузном тесте на палочке", img:"https://loremflickr.com/400/300/corn,dog?lock=38" },
+    { id:39, name:"Сырные палочки 6 шт",  price:1290, noDiscount:true, desc:"Хрустящие палочки с тягучим сыром внутри", img:"https://loremflickr.com/400/300/mozzarella,sticks?lock=39" },
+    { id:40, name:"Соус",                 price:150,  noDiscount:true, desc:"Фирменный соус на выбор: чесночный, острый, барбекю", img:"https://loremflickr.com/400/300/sauce,dip?lock=40" },
   ],
   "🍕 Пицца": [
     { id:41, name:"Маргарита", price:2090, desc:"Томатный соус, моцарелла, свежий базилик", img:"https://loremflickr.com/400/300/pizza,margherita?lock=41" },
@@ -443,15 +443,24 @@ export default function App() {
 
   const allItems = useMemo(() => Object.values(menuData).flat(), [menuData]);
   const cartItems   = useMemo(() => Object.entries(order).filter(([,q])=>q>0).map(([id,qty])=>({...allItems.find(i=>i.id===+id)!,qty})), [order,allItems]);
-  const totalFood   = useMemo(() => cartItems.filter(i=>!i.isDrink).reduce((s,i)=>s+i.price*i.qty,0), [cartItems]);
-  const totalDrinks = useMemo(() => cartItems.filter(i=> i.isDrink).reduce((s,i)=>s+i.price*i.qty,0), [cartItems]);
-  const totalRaw    = totalFood + totalDrinks;
-  const discount    = getDiscount(totalFood);
-  const discountAmt = Math.round(totalFood * discount.pct / 100);
-  const totalFinal  = totalRaw - discountAmt;
-  const cartCount   = useMemo(() => Object.values(order).reduce((s,q)=>s+q,0), [order]);
-  const nextTier    = DISCOUNT_TIERS.find(t=>t.pct>discount.pct&&t.min>totalFood);
-  const progress    = Math.min(100,(totalFood/20000)*100);
+  // Суши + Пицца
+  const totalSushiPizza  = useMemo(() => cartItems.filter(i=>!i.isDrink&&!i.noDiscount).reduce((s,i)=>s+i.price*i.qty,0), [cartItems]);
+  // Бургеры + Лаваш + Крылышки + Снэки
+  const totalOther       = useMemo(() => cartItems.filter(i=>!i.isDrink&&!!i.noDiscount).reduce((s,i)=>s+i.price*i.qty,0), [cartItems]);
+  const totalFood        = totalSushiPizza + totalOther;
+  const totalDrinks      = useMemo(() => cartItems.filter(i=>i.isDrink).reduce((s,i)=>s+i.price*i.qty,0), [cartItems]);
+  const totalRaw         = totalFood + totalDrinks;
+  // Скидка ТОЛЬКО если есть суши или пицца в корзине
+  const hasSushiOrPizza  = useMemo(() => cartItems.some(i=>!i.isDrink&&!i.noDiscount), [cartItems]);
+  // Скидка 20/30/35% считается от ВСЕЙ еды (суши+пицца+бургеры+др)
+  const discount         = hasSushiOrPizza ? getDiscount(totalFood) : DISCOUNT_TIERS[3];
+  const discountAmt      = hasSushiOrPizza ? Math.round(totalFood * discount.pct / 100) : 0;
+  const discountSushiAmt = discountAmt; // для совместимости с UI
+  const discountOtherAmt = 0;
+  const totalFinal       = totalRaw - discountAmt;
+  const cartCount        = useMemo(() => Object.values(order).reduce((s,q)=>s+q,0), [order]);
+  const nextTier         = DISCOUNT_TIERS.find(t=>t.pct>discount.pct&&t.min>totalFood);
+  const progress    = Math.min(100,(totalDiscountable/20000)*100);
 
   const filtered = useMemo(() => {
     if (!search.trim()) return null;
@@ -503,7 +512,8 @@ export default function App() {
       foodLines ? `Еда:\n${foodLines}` : "",
       drinkLines ? `Напитки:\n${drinkLines}` : "",
       ``,
-      discount.pct > 0 ? `Скидка ${discount.label}: -${discountAmt.toLocaleString("ru-RU")} T` : "",
+      discountSushiAmt > 0 ? `Скидка суши ${discount.label}: -${discountSushiAmt.toLocaleString("ru-RU")} T` : "",
+      discountOtherAmt > 0 ? `Скидка бургеры 10%: -${discountOtherAmt.toLocaleString("ru-RU")} T` : "",
       `ИТОГО: ${totalFinal.toLocaleString("ru-RU")} T`,
       comment ? `Комментарий: ${comment}` : "",
       ``,
@@ -588,10 +598,39 @@ export default function App() {
 
   const Qty = ({item}:{item:MenuItem}) => {
     const q=order[item.id]||0, isAnim=animId===item.id;
+    const [editing, setEditing] = useState(false);
+    const [inputVal, setInputVal] = useState("");
     return (
       <div style={{display:"flex",alignItems:"center",gap:6,flexShrink:0}}>
         {q>0&&<button onClick={e=>{e.stopPropagation();change(item.id,-1);}} className={isAnim?"bounce":""} style={{width:30,height:30,borderRadius:"50%",border:`1.5px solid ${brd}`,background:"transparent",color:clr,fontSize:17,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700}}>−</button>}
-        {q>0&&<span style={{minWidth:20,textAlign:"center",fontSize:14,fontWeight:800,color:YELLOW}}>{q}</span>}
+        {q>0&&(
+          editing ? (
+            <input
+              type="number" value={inputVal} autoFocus
+              onChange={e=>setInputVal(e.target.value)}
+              onBlur={()=>{
+                const n=parseInt(inputVal);
+                if(!isNaN(n)&&n>=0){
+                  const diff=n-q;
+                  if(diff!==0) change(item.id,diff);
+                }
+                setEditing(false); setInputVal("");
+              }}
+              onKeyDown={e=>{
+                if(e.key==="Enter"){(e.target as HTMLInputElement).blur();}
+                if(e.key==="Escape"){setEditing(false);setInputVal("");}
+              }}
+              onClick={e=>e.stopPropagation()}
+              style={{width:40,textAlign:"center",fontSize:14,fontWeight:800,color:YELLOW,background:darkMode?"#2a2000":"#fff8e0",border:`1.5px solid ${YELLOW}`,borderRadius:8,padding:"2px 4px",outline:"none",fontFamily:"'Nunito',sans-serif"}}
+            />
+          ) : (
+            <span
+              onClick={e=>{e.stopPropagation();setEditing(true);setInputVal(String(q));}}
+              style={{minWidth:20,textAlign:"center",fontSize:14,fontWeight:800,color:YELLOW,cursor:"text",borderBottom:`1px dashed ${YELLOW}`,paddingBottom:1}}
+              title="Нажмите чтобы ввести количество"
+            >{q}</span>
+          )
+        )}
         <button onClick={e=>{e.stopPropagation();change(item.id,1);}} className={isAnim?"bounce":""} style={{width:30,height:30,borderRadius:"50%",border:`1.5px solid ${YELLOW}`,background:q>0?YELLOW:"transparent",color:q>0?DARK:clr,fontSize:19,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700,transition:"all 0.15s"}}>+</button>
       </div>
     );
@@ -1336,7 +1375,7 @@ export default function App() {
             <div style={{fontSize:10,letterSpacing:2,color:mutedC,fontWeight:700,marginBottom:10}}>ИТОГО К ОПЛАТЕ</div>
             {totalFood>0&&<div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}><span style={{fontSize:13,color:mutedC}}>Еда</span><span style={{fontSize:13}}>{totalFood.toLocaleString("ru-RU")} ₸</span></div>}
             {totalDrinks>0&&<div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}><span style={{fontSize:13,color:mutedC}}>Напитки</span><span style={{fontSize:13}}>{totalDrinks.toLocaleString("ru-RU")} ₸</span></div>}
-            {discountAmt>0&&<div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}><span style={{fontSize:13,color:"#4cff91"}}>Скидка {discount.label}</span><span style={{fontSize:13,color:"#4cff91"}}>−{discountAmt.toLocaleString("ru-RU")} ₸</span></div>}
+            {discountAmt>0&&<div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}><span style={{fontSize:13,color:"#4cff91"}}>Скидка {discount.label} на всё</span><span style={{fontSize:13,color:"#4cff91"}}>−{discountAmt.toLocaleString("ru-RU")} ₸</span></div>}
             {currentClient&&<div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}><span style={{fontSize:13,color:YELLOW}}>⭐ +{Math.floor(totalFinal/100)} бонусов</span><span style={{fontSize:11,color:mutedC}}>будет начислено</span></div>}
             <div style={{display:"flex",justifyContent:"space-between",paddingTop:10,borderTop:`1px solid ${YELLOW}44`,marginTop:6}}>
               <span style={{fontSize:15,fontWeight:800}}>К оплате</span>
@@ -1408,7 +1447,7 @@ export default function App() {
         <div style={{background:bgCard,borderRadius:14,padding:"14px 16px",border:`1px solid ${brd}`,marginBottom:20}}>
           {totalFood>0&&<div style={{display:"flex",justifyContent:"space-between",marginBottom:5}}><span style={{fontSize:12,color:mutedC}}>Еда</span><span style={{fontSize:12}}>{totalFood.toLocaleString("ru-RU")} ₸</span></div>}
           {totalDrinks>0&&<div style={{display:"flex",justifyContent:"space-between",marginBottom:5}}><span style={{fontSize:12,color:mutedC}}>Напитки</span><span style={{fontSize:12}}>{totalDrinks.toLocaleString("ru-RU")} ₸</span></div>}
-          {discountAmt>0&&<div style={{display:"flex",justifyContent:"space-between",marginBottom:5}}><span style={{fontSize:12,color:"#4cff91"}}>Скидка {discount.label}</span><span style={{fontSize:12,color:"#4cff91"}}>−{discountAmt.toLocaleString("ru-RU")} ₸</span></div>}
+          {discountAmt>0&&<div style={{display:"flex",justifyContent:"space-between",marginBottom:3}}><span style={{fontSize:12,color:"#4cff91"}}>Скидка {discount.label} на всё</span><span style={{fontSize:12,color:"#4cff91"}}>−{discountAmt.toLocaleString("ru-RU")} ₸</span></div>}
           <div style={{display:"flex",justifyContent:"space-between",paddingTop:10,borderTop:`1px solid ${YELLOW}44`,marginTop:4}}>
             <span style={{fontSize:14,fontWeight:800}}>ИТОГО</span>
             <span style={{fontSize:22,fontWeight:900,color:YELLOW}}>{totalFinal.toLocaleString("ru-RU")} ₸</span>
@@ -1440,12 +1479,18 @@ export default function App() {
               <div style={{fontSize:14,fontWeight:900,color:YELLOW,marginBottom:3}}>
                 {discount.pct===35?"🏆 Максимальная скидка 35%!":discount.pct===30?"🔥 Скидка 30% активна!":discount.pct===20?"🎉 Скидка 20% активна!":"🎯 Собери сет со скидкой"}
               </div>
-              <div style={{fontSize:11,color:darkMode?"#aaa":"#888",lineHeight:1.5}}>
-                {discount.pct===35?"Максимальная скидка на всю еду!":nextTier?`До скидки ${nextTier.label} осталось ${(nextTier.min-totalFood).toLocaleString("ru-RU")} ₸`:"6 000 ₸ = −20%  ·  10 000 ₸ = −30%  ·  20 000 ₸ = −35%"}
+              <div style={{fontSize:11,color:darkMode?"#aaa":"#888",lineHeight:1.6}}>
+                {!hasSushiOrPizza
+                  ?"Добавь суши или пиццу — и получи скидку на всё!"
+                  :discount.pct===35
+                  ?"Максимальная скидка -35% на весь заказ!"
+                  :nextTier
+                  ?`Ещё ${(nextTier.min-totalFood).toLocaleString("ru-RU")} ₸ до скидки -${nextTier.label} на всё`
+                  :"Добавь суши/пиццу: 6К=-20% · 10К=-30% · 20К=-35% на всё"}
               </div>
             </div>
             <div style={{flexShrink:0}}>
-              {discount.pct>0?<div style={{fontSize:11,background:"#4cff9122",border:"1px solid #4cff9144",color:"#4cff91",padding:"4px 10px",borderRadius:20,fontWeight:800}}>−{discountAmt.toLocaleString("ru-RU")} ₸</div>:<div style={{fontSize:11,color:mutedC}}>{totalFood.toLocaleString("ru-RU")} / 6 000 ₸</div>}
+              {discount.pct>0?<div style={{fontSize:11,background:"#4cff9122",border:"1px solid #4cff9144",color:"#4cff91",padding:"4px 10px",borderRadius:20,fontWeight:800}}>−{discountAmt.toLocaleString("ru-RU")} ₸</div>:<div style={{fontSize:11,color:mutedC}}>{hasSushiOrPizza?totalFood.toLocaleString("ru-RU"):"—"} / 6 000 ₸</div>}
             </div>
           </div>
           <div style={{background:darkMode?"#2a2a2a":"#e5e5e5",borderRadius:8,height:7,overflow:"hidden",position:"relative"}}>
@@ -1489,7 +1534,7 @@ export default function App() {
             {search&&<div style={{fontSize:12,fontWeight:800,color:YELLOW,letterSpacing:2,margin:"16px 0 8px"}}>{cat}</div>}
             <div style={{background:bgCard,borderRadius:16,overflow:"hidden",border:`1px solid ${brd}`,marginBottom:16}}>
               {items.map((item,idx)=>{
-                const q=order[item.id]||0, isActive=q>0, isHit=HITS.has(item.id), showDiscount=!item.isDrink&&discount.pct>0;
+                const q=order[item.id]||0, isActive=q>0, isHit=HITS.has(item.id), showDiscount=!item.isDrink&&hasSushiOrPizza&&discount.pct>0;
                 return (
                   <div key={item.id} onClick={()=>setSelectedItem(item)}
                     style={{display:"flex",alignItems:"center",padding:"10px 16px",borderBottom:idx<items.length-1?`1px solid ${brd}`:"none",gap:10,background:isActive?(darkMode?"#1e1a00":"#fffbe6"):"transparent",transition:"background 0.2s",cursor:"pointer"}}>

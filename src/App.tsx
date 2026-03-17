@@ -1,9 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
-import { initializeApp } from "firebase/app";
-import { getFirestore, doc, setDoc, getDoc, collection, addDoc, serverTimestamp, query, orderBy, getDocs } from "firebase/firestore";
-
-// ─── Firebase ───
-const firebaseConfig = {
+// ─── Firebase через CDN (не требует npm install) ───
+const FB_CONFIG = {
   apiKey: "AIzaSyByv-cxXkJT6iKay85ME-goVR16YUEU54Y",
   authDomain: "pak-sushi.firebaseapp.com",
   projectId: "pak-sushi",
@@ -11,31 +8,68 @@ const firebaseConfig = {
   messagingSenderId: "264463017591",
   appId: "1:264463017591:web:1125febdedc535524cc872",
 };
-const firebaseApp = initializeApp(firebaseConfig);
-const db = getFirestore(firebaseApp);
 
-// Сохранить меню в Firestore
+// Firestore REST API — работает без npm пакета
+const FS_BASE = `https://firestore.googleapis.com/v1/projects/${FB_CONFIG.projectId}/databases/(default)/documents`;
+
 const saveMenuToCloud = async (menuData: any) => {
-  try { await setDoc(doc(db, "settings", "menu"), { data: menuData, updatedAt: serverTimestamp() }); } catch(e) { console.error("Firebase save menu:", e); }
+  try {
+    const fields: any = {};
+    const encoded = JSON.stringify(menuData);
+    fields.data = { stringValue: encoded };
+    fields.updatedAt = { timestampValue: new Date().toISOString() };
+    await fetch(`${FS_BASE}/settings/menu?key=${FB_CONFIG.apiKey}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ fields }),
+    });
+  } catch(e) { console.error("Firebase save menu:", e); }
 };
-// Загрузить меню из Firestore
+
 const loadMenuFromCloud = async (): Promise<any|null> => {
   try {
-    const snap = await getDoc(doc(db, "settings", "menu"));
-    if (snap.exists()) return snap.data().data;
+    const res = await fetch(`${FS_BASE}/settings/menu?key=${FB_CONFIG.apiKey}`);
+    if (!res.ok) return null;
+    const data = await res.json();
+    const str = data?.fields?.data?.stringValue;
+    if (str) return JSON.parse(str);
   } catch(e) { console.error("Firebase load menu:", e); }
   return null;
 };
-// Сохранить заказ в Firestore
+
 const saveOrderToCloud = async (orderData: any) => {
-  try { await addDoc(collection(db, "orders"), { ...orderData, createdAt: serverTimestamp() }); } catch(e) { console.error("Firebase save order:", e); }
+  try {
+    const fields: any = {};
+    Object.entries(orderData).forEach(([k, v]) => {
+      if (typeof v === "string") fields[k] = { stringValue: v };
+      else if (typeof v === "number") fields[k] = { integerValue: String(v) };
+      else if (typeof v === "boolean") fields[k] = { booleanValue: v };
+      else fields[k] = { stringValue: JSON.stringify(v) };
+    });
+    fields.createdAt = { timestampValue: new Date().toISOString() };
+    await fetch(`${FS_BASE}/orders?key=${FB_CONFIG.apiKey}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ fields }),
+    });
+  } catch(e) { console.error("Firebase save order:", e); }
 };
-// Загрузить заказы из Firestore (для админки)
+
 const loadOrdersFromCloud = async (): Promise<any[]> => {
   try {
-    const q = query(collection(db, "orders"), orderBy("createdAt", "desc"));
-    const snap = await getDocs(q);
-    return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const res = await fetch(`${FS_BASE}/orders?key=${FB_CONFIG.apiKey}&pageSize=50&orderBy=createdAt+desc`);
+    if (!res.ok) return [];
+    const data = await res.json();
+    return (data.documents || []).map((d: any) => {
+      const obj: any = { id: d.name?.split("/").pop() };
+      Object.entries(d.fields || {}).forEach(([k, v]: any) => {
+        obj[k] = v.stringValue ?? v.integerValue ?? v.booleanValue ?? v.timestampValue ?? "";
+        if (k === "items" || k === "total" || k === "discount") {
+          try { obj[k] = JSON.parse(obj[k]); } catch {}
+        }
+      });
+      return obj;
+    });
   } catch(e) { console.error("Firebase load orders:", e); return []; }
 };
 

@@ -664,8 +664,7 @@ export default function App() {
                     Нажмите "Обновить" чтобы загрузить заказы
                   </div>
                 ):(
-                  {/* Фильтр по статусу */}
-                  {(() => {
+                  (() => {
                     const STATUS_CONFIG: Record<string,{label:string;color:string;bg:string;border:string}> = {
                       "new":       {label:"🆕 Новый",      color:"#5ab4e8", bg:"#0a1a2a", border:"#1a3a5a"},
                       "paid":      {label:"💳 Оплачен",    color:"#4cff91", bg:"#0a2a0a", border:"#1a4a1a"},
@@ -769,7 +768,7 @@ export default function App() {
                         })}
                       </div>
                     </>);
-                  })()}
+                  })()
                 )}
               </div>
 

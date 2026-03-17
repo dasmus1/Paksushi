@@ -643,40 +643,133 @@ export default function App() {
               <div style={{marginBottom:20}}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
                   <div style={{fontSize:10,letterSpacing:2,color:mutedC,fontWeight:700}}>ПОСЛЕДНИЕ ЗАКАЗЫ (FIREBASE)</div>
+  <div style={{display:"flex",gap:6}}>
                   <button onClick={()=>loadOrdersFromCloud().then(setCloudOrders)}
                     style={{background:"#1a1a2a",border:`1px solid ${brd}`,borderRadius:8,padding:"4px 10px",color:"#5ab4e8",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>
                     🔄 Обновить
                   </button>
+                  <button onClick={()=>{
+                    if(!window.confirm("Сбросить всю статистику? Это нельзя отменить!")) return;
+                    saveStats({visits:0,orders:0,totalRevenue:0,popularItems:{}});
+                    localStorage.setItem("paksushi_order_counter","1000");
+                    setCloudOrders([]);
+                    window.location.reload();
+                  }} style={{background:"#2a0a0a",border:"1px solid #5a1a1a",borderRadius:8,padding:"4px 10px",color:"#ff6b6b",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>
+                    🗑 Сбросить
+                  </button>
+                </div>
                 </div>
                 {cloudOrders.length===0?(
                   <div style={{background:bgCard,borderRadius:14,border:`1px solid ${brd}`,padding:"20px",textAlign:"center",color:mutedC,fontSize:13}}>
                     Нажмите "Обновить" чтобы загрузить заказы
                   </div>
                 ):(
-                  <div style={{display:"flex",flexDirection:"column",gap:10}}>
-                    {cloudOrders.slice(0,20).map((ord:any)=>(
-                      <div key={ord.id} style={{background:bgCard,borderRadius:14,border:`1px solid ${brd}`,overflow:"hidden"}}>
-                        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 14px",borderBottom:`1px solid ${brd}`}}>
-                          <div>
-                            <div style={{display:"flex",alignItems:"center",gap:8}}>
-                              <span style={{fontSize:13,fontWeight:900,color:YELLOW}}>{ord.orderNumber}</span>
-                              <span style={{fontSize:10,background:"#0a2a0a",border:"1px solid #1a4a1a",color:"#4cff91",padding:"1px 6px",borderRadius:8,fontWeight:700}}>✅ с сайта</span>
-                            </div>
-                            <div style={{fontSize:11,color:mutedC,marginTop:2}}>{ord.date} · {ord.name} · {ord.phone}</div>
-                          </div>
-                          <div style={{textAlign:"right"}}>
-                            <div style={{fontSize:14,fontWeight:900,color:YELLOW}}>{(ord.total||0).toLocaleString("ru-RU")} ₸</div>
-                            {ord.discount>0&&<div style={{fontSize:10,color:"#4cff91"}}>скидка −{ord.discount.toLocaleString("ru-RU")} ₸</div>}
-                          </div>
+                  {/* Фильтр по статусу */}
+                  {(() => {
+                    const STATUS_CONFIG: Record<string,{label:string;color:string;bg:string;border:string}> = {
+                      "new":       {label:"🆕 Новый",      color:"#5ab4e8", bg:"#0a1a2a", border:"#1a3a5a"},
+                      "paid":      {label:"💳 Оплачен",    color:"#4cff91", bg:"#0a2a0a", border:"#1a4a1a"},
+                      "cooking":   {label:"👨‍🍳 Готовится",  color:"#ffaa00", bg:"#2a1a00", border:"#4a3a00"},
+                      "delivered": {label:"✅ Доставлен",  color:"#aaa",    bg:"#1a1a1a", border:"#2a2a2a"},
+                      "cancelled": {label:"❌ Отменён",    color:"#ff6b6b", bg:"#2a0a0a", border:"#5a1a1a"},
+                    };
+                    const STATUS_NEXT: Record<string,string> = {
+                      "new":"paid", "paid":"cooking", "cooking":"delivered"
+                    };
+                    const STATUS_NEXT_LABEL: Record<string,string> = {
+                      "new":"Отметить оплаченным →",
+                      "paid":"Готовится →",
+                      "cooking":"Доставлен →",
+                    };
+                    const updateOrderStatus = async (ordId:string, newStatus:string) => {
+                      try {
+                        await fetch(`${FS_BASE}/orders/${ordId}?key=${FB_CONFIG.apiKey}&updateMask.fieldPaths=status`, {
+                          method:"PATCH",
+                          headers:{"Content-Type":"application/json"},
+                          body: JSON.stringify({fields:{status:{stringValue:newStatus}}}),
+                        });
+                        setCloudOrders(prev=>prev.map(o=>o.id===ordId?{...o,status:newStatus}:o));
+                      } catch(e){console.error(e);}
+                    };
+                    // Счётчики по статусам
+                    const counts: Record<string,number> = {};
+                    cloudOrders.forEach(o=>{ const s=o.status||"new"; counts[s]=(counts[s]||0)+1; });
+                    const paidRevenue = cloudOrders.filter(o=>o.status==="paid"||o.status==="cooking"||o.status==="delivered").reduce((s:number,o:any)=>s+(o.total||0),0);
+                    return (<>
+                      {/* Сводка */}
+                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:12}}>
+                        <div style={{background:"#0a2a0a",border:"1px solid #1a4a1a",borderRadius:12,padding:"10px 12px",textAlign:"center"}}>
+                          <div style={{fontSize:18,fontWeight:900,color:"#4cff91"}}>{paidRevenue.toLocaleString("ru-RU")} ₸</div>
+                          <div style={{fontSize:10,color:mutedC,marginTop:2}}>💳 Реальная выручка</div>
                         </div>
-                        <div style={{padding:"8px 14px",fontSize:11,color:mutedC,lineHeight:1.6}}>
-                          {ord.address&&<div>📍 {ord.address}</div>}
-                          <div>{(ord.items||[]).map((i:any)=>`${i.name} ×${i.qty}`).join(" · ")}</div>
-                          {ord.comment&&<div style={{color:"#5ab4e8",marginTop:4}}>💬 {ord.comment}</div>}
+                        <div style={{background:bgCard,border:`1px solid ${brd}`,borderRadius:12,padding:"10px 12px",textAlign:"center"}}>
+                          <div style={{fontSize:18,fontWeight:900,color:YELLOW}}>{cloudOrders.filter(o=>o.status==="new"||!o.status).length}</div>
+                          <div style={{fontSize:10,color:mutedC,marginTop:2}}>🆕 Новых заказов</div>
                         </div>
                       </div>
-                    ))}
-                  </div>
+                      {/* Список заказов */}
+                      <div style={{display:"flex",flexDirection:"column",gap:10}}>
+                        {cloudOrders.slice(0,30).map((ord:any)=>{
+                          const st = ord.status||"new";
+                          const cfg = STATUS_CONFIG[st]||STATUS_CONFIG["new"];
+                          const nextSt = STATUS_NEXT[st];
+                          return (
+                            <div key={ord.id} style={{background:bgCard,borderRadius:14,border:`1px solid ${brd}`,overflow:"hidden"}}>
+                              {/* Шапка заказа */}
+                              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 14px",borderBottom:`1px solid ${brd}`}}>
+                                <div style={{flex:1}}>
+                                  <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
+                                    <span style={{fontSize:13,fontWeight:900,color:YELLOW}}>{ord.orderNumber}</span>
+                                    <span style={{fontSize:10,background:cfg.bg,border:`1px solid ${cfg.border}`,color:cfg.color,padding:"1px 7px",borderRadius:8,fontWeight:700}}>{cfg.label}</span>
+                                  </div>
+                                  <div style={{fontSize:11,color:mutedC,marginTop:2}}>{ord.date} · {ord.name} · {ord.phone}</div>
+                                </div>
+                                <div style={{display:"flex",alignItems:"center",gap:6,flexShrink:0}}>
+                                  <div style={{textAlign:"right"}}>
+                                    <div style={{fontSize:14,fontWeight:900,color:YELLOW}}>{(ord.total||0).toLocaleString("ru-RU")} ₸</div>
+                                    {ord.discount>0&&<div style={{fontSize:10,color:"#4cff91"}}>−{(ord.discount||0).toLocaleString("ru-RU")} ₸</div>}
+                                  </div>
+                                  <button onClick={async()=>{
+                                    if(!window.confirm(`Удалить заказ ${ord.orderNumber}?`)) return;
+                                    try {
+                                      await fetch(`${FS_BASE}/orders/${ord.id}?key=${FB_CONFIG.apiKey}`,{method:"DELETE"});
+                                      setCloudOrders(prev=>prev.filter(o=>o.id!==ord.id));
+                                    } catch(e){console.error(e);}
+                                  }} style={{background:"#2a0a0a",border:"1px solid #5a1a1a",borderRadius:8,padding:"6px 8px",color:"#ff6b6b",fontSize:13,cursor:"pointer",flexShrink:0}}>🗑</button>
+                                </div>
+                              </div>
+                              {/* Состав */}
+                              <div style={{padding:"8px 14px",fontSize:11,color:mutedC,lineHeight:1.6}}>
+                                {ord.address&&<div>📍 {ord.address}</div>}
+                                <div>{(ord.items||[]).map((i:any)=>`${i.name} ×${i.qty}`).join(" · ")}</div>
+                                {ord.comment&&<div style={{color:"#5ab4e8",marginTop:2}}>💬 {ord.comment}</div>}
+                              </div>
+                              {/* Кнопки статуса */}
+                              <div style={{display:"flex",gap:6,padding:"8px 14px",borderTop:`1px solid ${brd}`}}>
+                                {nextSt&&(
+                                  <button onClick={()=>updateOrderStatus(ord.id, nextSt)}
+                                    style={{flex:2,background:STATUS_CONFIG[nextSt].bg,border:`1px solid ${STATUS_CONFIG[nextSt].border}`,borderRadius:8,padding:"7px",color:STATUS_CONFIG[nextSt].color,fontFamily:"'Nunito',sans-serif",fontSize:11,fontWeight:800,cursor:"pointer"}}>
+                                    {STATUS_NEXT_LABEL[st]}
+                                  </button>
+                                )}
+                                {st!=="cancelled"&&st!=="delivered"&&(
+                                  <button onClick={()=>updateOrderStatus(ord.id,"cancelled")}
+                                    style={{flex:1,background:"#2a0a0a",border:"1px solid #5a1a1a",borderRadius:8,padding:"7px",color:"#ff6b6b",fontFamily:"'Nunito',sans-serif",fontSize:11,fontWeight:700,cursor:"pointer"}}>
+                                    Отменить
+                                  </button>
+                                )}
+                                {(st==="delivered"||st==="cancelled")&&(
+                                  <div style={{flex:1,textAlign:"center",fontSize:11,color:mutedC,padding:"7px"}}>
+                                    {st==="delivered"?"✅ Завершён":"❌ Отменён"}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </>);
+                  })()}
                 )}
               </div>
 

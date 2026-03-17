@@ -487,27 +487,28 @@ export default function App() {
     if (!name||!phone) return;
     const ordNum = generateOrderNumber();
     setOrderNumber(ordNum);
-    const foodLines  = cartItems.filter(i=>!i.isDrink).map(i=>`• ${i.name}${i.note?` (${i.note})`:""} x${i.qty} = ${(i.price*i.qty).toLocaleString("ru-RU")} ₸`).join("\n");
-    const drinkLines = cartItems.filter(i=> i.isDrink).map(i=>`• ${i.name} x${i.qty} = ${(i.price*i.qty).toLocaleString("ru-RU")} ₸`).join("\n");
+    const foodLines  = cartItems.filter(i=>!i.isDrink).map(i=>`- ${i.name}${i.note?` (${i.note})`:""} x${i.qty} = ${(i.price*i.qty).toLocaleString("ru-RU")} T`).join("\n");
+    const drinkLines = cartItems.filter(i=> i.isDrink).map(i=>`- ${i.name} x${i.qty} = ${(i.price*i.qty).toLocaleString("ru-RU")} T`).join("\n");
     const msg = [
-      `🍣 ПАК СУШИ Сарыағаш`,
+      `ПАК СУШИ Сарыагаш`,
       ``,
-      `📋 Номер заказа: *${ordNum}*`,
+      `Номер заказа: *${ordNum}*`,
       ``,
-      `👤 ${name}`,
-      `📞 ${phone}`,
-      address ? `📍 ${address}` : "",
-      `💳 Kaspi Gold (номер пришлёт менеджер)`,
-      currentClient ? `⭐ ${currentClient.name||name} | бонусов: ${currentClient.bonusPoints+Math.floor(totalFinal/100)}` : "",
+      `Имя: ${name}`,
+      `Тел: ${phone}`,
+      address ? `Адрес: ${address}` : "",
+      `Оплата: Kaspi Gold (номер пришлет менеджер)`,
+      currentClient ? `Клиент: ${currentClient.name||name} | бонусов: ${currentClient.bonusPoints+Math.floor(totalFinal/100)}` : "",
       ``,
-      foodLines ? `🍱 Еда:\n${foodLines}` : "",
-      drinkLines ? `🥤 Напитки:\n${drinkLines}` : "",
+      foodLines ? `Еда:\n${foodLines}` : "",
+      drinkLines ? `Напитки:\n${drinkLines}` : "",
       ``,
-      discount.pct > 0 ? `💥 Скидка ${discount.label}: -${discountAmt.toLocaleString("ru-RU")} ₸` : "",
-      `💰 ИТОГО: ${totalFinal.toLocaleString("ru-RU")} ₸`,
-      comment ? `💬 ${comment}` : "",
+      discount.pct > 0 ? `Скидка ${discount.label}: -${discountAmt.toLocaleString("ru-RU")} T` : "",
+      `ИТОГО: ${totalFinal.toLocaleString("ru-RU")} T`,
+      comment ? `Комментарий: ${comment}` : "",
       ``,
-      `🔐 Код: ${ordNum} | paksushi-sary.com`,
+      `Код заказа: ${ordNum}`,
+      `Заказ с сайта: paksushi-sary.com`,
     ].filter(Boolean).join("\n");
     window.open(`${WA}?text=${encodeURIComponent(msg)}`, "_blank");
     trackOrder(cartItems, totalFinal);
@@ -719,7 +720,7 @@ export default function App() {
           {/* Роль */}
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
             <div style={{fontSize:11,background:adminRole==="owner"?"#1a1200":"#0a1a2a",border:`1px solid ${adminRole==="owner"?"#3a3000":"#1a3a5a"}`,borderRadius:10,padding:"4px 10px",color:adminRole==="owner"?YELLOW:"#5ab4e8",fontWeight:800}}>
-              {adminRole==="owner"?"👑 Владелец":"👨‍💼 Администратор"}
+              {adminRole==="owner"?"⭐ Владелец":"👤 Администратор"}
             </div>
             <button onClick={()=>{setAdminRole("");setAdminPass("");}} style={{background:"transparent",border:`1px solid ${brd}`,borderRadius:8,padding:"4px 10px",color:mutedC,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>
               Выйти
@@ -788,7 +789,7 @@ export default function App() {
                     const STATUS_CONFIG: Record<string,{label:string;color:string;bg:string;border:string}> = {
                       "new":       {label:"🆕 Новый",      color:"#5ab4e8", bg:"#0a1a2a", border:"#1a3a5a"},
                       "paid":      {label:"💳 Оплачен",    color:"#4cff91", bg:"#0a2a0a", border:"#1a4a1a"},
-                      "cooking":   {label:"👨‍🍳 Готовится",  color:"#ffaa00", bg:"#2a1a00", border:"#4a3a00"},
+                      "cooking":   {label:"🍳 Готовится",  color:"#ffaa00", bg:"#2a1a00", border:"#4a3a00"},
                       "delivered": {label:"✅ Доставлен",  color:"#aaa",    bg:"#1a1a1a", border:"#2a2a2a"},
                       "cancelled": {label:"❌ Отменён",    color:"#ff6b6b", bg:"#2a0a0a", border:"#5a1a1a"},
                     };
@@ -1041,7 +1042,7 @@ export default function App() {
                             <span style={{fontSize:10,background:"#2a0a0a",border:"1px solid #5a1a1a",color:"#ff6b6b",padding:"1px 6px",borderRadius:8,fontWeight:700}}>❌ Удалён</span>
                           </div>
                           <div style={{fontSize:11,color:mutedC,marginTop:2}}>{ord.date} · {ord.name} · {ord.phone}</div>
-                          <div style={{fontSize:10,color:"#ff6b6b",marginTop:2}}>Удалил: {ord.deletedBy==="owner"?"👑 Владелец":"👨‍💼 Админ"} · {ord.deletedAt}</div>
+                          <div style={{fontSize:10,color:"#ff6b6b",marginTop:2}}>Удалил: {ord.deletedBy==="owner"?"⭐ Владелец":"👤 Админ"} · {ord.deletedAt}</div>
                         </div>
                         <div style={{textAlign:"right"}}>
                           <div style={{fontSize:14,fontWeight:900,color:"#ff6b6b"}}>{(ord.total||0).toLocaleString("ru-RU")} ₸</div>

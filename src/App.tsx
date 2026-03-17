@@ -299,10 +299,7 @@ export default function App() {
   const [selectedItem, setSelectedItem] = useState<MenuItem|null>(null);
 
   // Логин клиента
-  const [loginPhone,    setLoginPhone]    = useState("");
-  const [loginCode,     setLoginCode]     = useState("");
-  const [loginStep,     setLoginStep]     = useState<"phone"|"code">("phone");
-  const [generatedCode, setGeneratedCode] = useState("");
+
   const [currentClient, setCurrentClient] = useState<(Client&{phone:string})|null>(null);
 
   // Админ
@@ -328,7 +325,110 @@ export default function App() {
         localStorage.setItem("paksushi_menu", JSON.stringify(cloudMenu));
       }
     });
+    // Восстановить клиента из localStorage при загрузке
+    try {
+      const saved = localStorage.getItem("paksushi_current_client");
+      if (saved) {
+        const client = JSON.parse(saved);
+        setCurrentClient(client);
+        setName(client.name||"");
+        setPhone(client.phone||"");
+        // Обновить данные из Firebase
+        fetch(`${FS_BASE}/clients/${client.phone}?key=${FB_CONFIG.apiKey}`)
+          .then(r=>r.ok?r.json():null)
+          .then(d=>{
+            if(d&&d.fields){
+              const obj = Object.fromEntries(Object.entries(d.fields).map(([k,v]:any)=>[k,(v.stringValue||v.integerValue||"")]));
+              const updated = {name:obj.name||client.name, phone:client.phone, orders:Number(obj.orders)||client.orders, bonusPoints:Number(obj.bonusPoints)||client.bonusPoints, registeredAt:obj.registeredAt||client.registeredAt};
+              setCurrentClient(updated);
+              setName(updated.name);
+              localStorage.setItem("paksushi_current_client", JSON.stringify(updated));
+            }
+          }).catch(()=>{});
+      }
+    } catch(e){}
   }, []);
+
+  // Компонент формы входа
+  const LoginForm = ({bg:_bg,bgCard:_bgCard,clr:_clr,brd:_brd,mutedC:_mutedC,onLogin}:any) => {
+    const [lPhone, setLPhone] = useState("");
+    const [lName,  setLName]  = useState("");
+    const [step,   setStep]   = useState<"phone"|"name">("phone");
+    const [loading,setLoading]= useState(false);
+
+    const checkPhone = async () => {
+      if (lPhone.replace(/\D/g,"").length < 10) return;
+      setLoading(true);
+      try {
+        const r = await fetch(`${FS_BASE}/clients/${lPhone.replace(/\D/g,"")}?key=${FB_CONFIG.apiKey}`);
+        if (r.ok) {
+          const d = await r.json();
+          const savedName = d.fields?.name?.stringValue||"";
+          if (savedName) {
+            // Клиент уже зарегистрирован — сразу входим
+            onLogin(lPhone, savedName);
+          } else {
+            setStep("name");
+          }
+        } else {
+          setStep("name");
+        }
+      } catch { setStep("name"); }
+      setLoading(false);
+    };
+
+    return (
+      <div>
+        <div style={{textAlign:"center",marginBottom:28}}>
+          <div style={{width:72,height:72,borderRadius:"50%",background:darkMode?"#1a1a00":"#fff8e8",border:`2px solid ${YELLOW}`,display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 16px"}}>
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4" stroke={YELLOW} strokeWidth="2"/><path d="M4 20c0-3.314 3.582-6 8-6s8 2.686 8 6" stroke={YELLOW} strokeWidth="2" strokeLinecap="round"/></svg>
+          </div>
+          <div style={{fontSize:20,fontWeight:900,marginBottom:8,color:clr}}>{step==="phone"?"Войти / Зарегистрироваться":"Как вас зовут?"}</div>
+          <div style={{fontSize:13,color:mutedC,lineHeight:1.6}}>{step==="phone"?"Введите номер телефона":"Введите ваше имя для заказов"}</div>
+        </div>
+
+        <div style={{background:darkMode?"#1a1200":"#fff8e8",border:`1px solid ${darkMode?"#3a3000":"#ffe0a0"}`,borderRadius:12,padding:"12px 14px",marginBottom:20}}>
+          {[["⭐","Бонусы за каждый заказ"],["📢","Акции и спецпредложения"],["🔄","История заказов на любом устройстве"]].map(([ic,tx],i)=>(
+            <div key={i} style={{display:"flex",alignItems:"center",gap:8,marginBottom:i<2?8:0}}>
+              <span style={{fontSize:16}}>{ic}</span><span style={{fontSize:12,color:darkMode?"#ccc":"#555"}}>{tx}</span>
+            </div>
+          ))}
+        </div>
+
+        {step==="phone"?(
+          <>
+            <div style={{marginBottom:16}}>
+              <div style={{fontSize:9,letterSpacing:2,color:mutedC,fontWeight:700,marginBottom:6}}>НОМЕР ТЕЛЕФОНА</div>
+              <input type="tel" value={lPhone} onChange={e=>setLPhone(e.target.value)}
+                onKeyDown={e=>e.key==="Enter"&&checkPhone()}
+                placeholder="+7 705 000 00 00" autoFocus
+                style={{width:"100%",padding:"13px 16px",background:bgCard,border:`1.5px solid ${brd}`,borderRadius:12,color:clr,fontFamily:"'Nunito',sans-serif",fontSize:16,outline:"none",boxSizing:"border-box"}}/>
+            </div>
+            <button onClick={checkPhone} disabled={lPhone.replace(/\D/g,"").length<10||loading}
+              style={{width:"100%",background:lPhone.replace(/\D/g,"").length>=10?YELLOW:"#333",color:lPhone.replace(/\D/g,"").length>=10?DARK:MUTED,border:"none",padding:14,borderRadius:14,fontFamily:"'Nunito',sans-serif",fontSize:14,fontWeight:900,cursor:lPhone.replace(/\D/g,"").length>=10?"pointer":"not-allowed"}}>
+              {loading?"Проверяем...":"Продолжить →"}
+            </button>
+          </>
+        ):(
+          <>
+            <div style={{marginBottom:16}}>
+              <div style={{fontSize:9,letterSpacing:2,color:mutedC,fontWeight:700,marginBottom:6}}>ВАШЕ ИМЯ</div>
+              <input type="text" value={lName} onChange={e=>setLName(e.target.value)}
+                onKeyDown={e=>e.key==="Enter"&&lName.trim()&&onLogin(lPhone,lName.trim())}
+                placeholder="Например: Асель" autoFocus
+                style={{width:"100%",padding:"13px 16px",background:bgCard,border:`1.5px solid ${brd}`,borderRadius:12,color:clr,fontFamily:"'Nunito',sans-serif",fontSize:16,outline:"none",boxSizing:"border-box"}}/>
+            </div>
+            <button onClick={()=>lName.trim()&&onLogin(lPhone,lName.trim())} disabled={!lName.trim()}
+              style={{width:"100%",background:lName.trim()?YELLOW:"#333",color:lName.trim()?DARK:MUTED,border:"none",padding:14,borderRadius:14,fontFamily:"'Nunito',sans-serif",fontSize:14,fontWeight:900,cursor:lName.trim()?"pointer":"not-allowed",marginBottom:10}}>
+              ✅ Готово
+            </button>
+            <button onClick={()=>setStep("phone")}
+              style={{width:"100%",background:"transparent",color:mutedC,border:`1px solid ${brd}`,padding:12,borderRadius:14,fontFamily:"'Nunito',sans-serif",fontSize:13,fontWeight:700,cursor:"pointer"}}>← Изменить номер</button>
+          </>
+        )}
+      </div>
+    );
+  };
 
   const now    = new Date();
   const hour   = now.getHours();
@@ -374,25 +474,14 @@ export default function App() {
     });
   };
 
-  const sendCode = () => {
-    if (loginPhone.length<10) return;
-    const code=String(Math.floor(1000+Math.random()*9000));
-    setGeneratedCode(code);
-    window.open(`https://wa.me/${loginPhone.replace(/\D/g,"")}?text=${encodeURIComponent(`Ваш код входа в ПАК СУШИ: *${code}*`)}`, "_blank");
-    setLoginStep("code");
-  };
 
-  const verifyCode = () => {
-    if (loginCode!==generatedCode){alert("Неверный код");return;}
-    const clients=getClients(); const ph=loginPhone.replace(/\D/g,"");
-    if (!clients[ph]) { clients[ph]={name:"",phone:ph,orders:0,bonusPoints:0,registeredAt:new Date().toLocaleDateString("ru-RU")}; saveClients(clients); }
-    setCurrentClient({...clients[ph],phone:ph});
-    if (clients[ph].name) setName(clients[ph].name);
-    setPhone(ph); setLoginStep("phone"); setLoginPhone(""); setLoginCode("");
-    setScreen("profile");
-  };
 
-  const logout = () => {setCurrentClient(null);setName("");setPhone("");};
+  const logout = () => {
+    setCurrentClient(null);
+    setName("");
+    setPhone("");
+    localStorage.removeItem("paksushi_current_client");
+  };
 
   const sendOrder = () => {
     if (!name||!phone) return;
@@ -446,15 +535,15 @@ export default function App() {
         discount: discountAmt,
       };
       saveOrderHistory(ph, [record, ...history]);
-      const clients = getClients();
       const pph = currentClient.phone;
-      if (clients[pph]) {
-        clients[pph].orders += 1;
-        clients[pph].bonusPoints += Math.floor(totalFinal / 100);
-        clients[pph].name = name;
-        saveClients(clients);
-        setCurrentClient({...clients[pph], phone:pph});
-      }
+      const updatedClient = {...currentClient, orders: currentClient.orders+1, bonusPoints: currentClient.bonusPoints+Math.floor(totalFinal/100), name};
+      setCurrentClient(updatedClient);
+      localStorage.setItem("paksushi_current_client", JSON.stringify(updatedClient));
+      // Сохранить в Firebase
+      fetch(`${FS_BASE}/clients/${pph}?key=${FB_CONFIG.apiKey}`, {
+        method:"PATCH", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({fields:{name:{stringValue:name},phone:{stringValue:pph},orders:{integerValue:String(updatedClient.orders)},bonusPoints:{integerValue:String(updatedClient.bonusPoints)},registeredAt:{stringValue:currentClient.registeredAt}}})
+      }).catch(()=>{});
     }
     setSent(true);
     setTimeout(()=>{setOrder({});setScreen("menu");setSent(false);setOrderNumber("");setName(currentClient?.name||"");setAddress("");setComment("");}, 4000);
@@ -1083,62 +1172,68 @@ export default function App() {
     <div style={{fontFamily:"'Nunito',sans-serif",background:bg,minHeight:"100vh",color:clr}}>
       <style>{css}</style>
       <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet"/>
-      <Header title="Войти" back="menu"/>
+      <Header title="Мой профиль" back="menu"/>
       <div style={{maxWidth:400,margin:"0 auto",padding:"32px 16px"}} className="fadeIn">
-        {currentClient?(
+        {currentClient ? (
           <div style={{textAlign:"center"}}>
             <div style={{width:72,height:72,borderRadius:"50%",background:"#0a2a0a",border:"2px solid #4cff91",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 16px"}}>
               <svg width="36" height="36" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4" stroke="#4cff91" strokeWidth="2"/><path d="M4 20c0-3.314 3.582-6 8-6s8 2.686 8 6" stroke="#4cff91" strokeWidth="2" strokeLinecap="round"/></svg>
             </div>
-            <div style={{fontSize:18,fontWeight:900,marginBottom:4}}>Вы уже вошли</div>
+            <div style={{fontSize:18,fontWeight:900,marginBottom:4}}>{currentClient.name}</div>
             <div style={{fontSize:14,color:mutedC,marginBottom:24}}>{currentClient.phone}</div>
             <button onClick={()=>setScreen("profile")} style={{width:"100%",background:YELLOW,color:DARK,border:"none",padding:14,borderRadius:14,fontFamily:"'Nunito',sans-serif",fontSize:14,fontWeight:900,cursor:"pointer",marginBottom:10}}>Мой профиль</button>
             <button onClick={logout} style={{width:"100%",background:"transparent",color:"#ff6b6b",border:"1px solid #ff6b6b",padding:14,borderRadius:14,fontFamily:"'Nunito',sans-serif",fontSize:14,fontWeight:700,cursor:"pointer"}}>Выйти</button>
           </div>
-        ):loginStep==="phone"?(
-          <>
-            <div style={{textAlign:"center",marginBottom:28}}>
-              <div style={{width:72,height:72,borderRadius:"50%",background:darkMode?"#1a1a00":"#fff8e8",border:`2px solid ${YELLOW}`,display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 16px"}}>
-                <svg width="36" height="36" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4" stroke={YELLOW} strokeWidth="2"/><path d="M4 20c0-3.314 3.582-6 8-6s8 2.686 8 6" stroke={YELLOW} strokeWidth="2" strokeLinecap="round"/></svg>
-              </div>
-              <div style={{fontSize:20,fontWeight:900,marginBottom:8}}>Войти / Зарегистрироваться</div>
-              <div style={{fontSize:13,color:mutedC,lineHeight:1.6}}>Введи номер — получишь код в WhatsApp</div>
-            </div>
-            <div style={{background:darkMode?"#1a1200":"#fff8e8",border:`1px solid ${darkMode?"#3a3000":"#ffe0a0"}`,borderRadius:12,padding:"12px 14px",marginBottom:20}}>
-              {[["⭐","Бонусы за каждый заказ"],["📢","Акции и спецпредложения"],["🎯","Персональные предложения"]].map(([ic,tx],i)=>(
-                <div key={i} style={{display:"flex",alignItems:"center",gap:8,marginBottom:i<2?8:0}}>
-                  <span style={{fontSize:16}}>{ic}</span><span style={{fontSize:12,color:darkMode?"#ccc":"#555"}}>{tx}</span>
-                </div>
-              ))}
-            </div>
-            <div style={{marginBottom:16}}>
-              <div style={{fontSize:9,letterSpacing:2,color:mutedC,fontWeight:700,marginBottom:6}}>НОМЕР ТЕЛЕФОНА</div>
-              <input type="tel" value={loginPhone} onChange={e=>setLoginPhone(e.target.value)} placeholder="+7 705 000 00 00"
-                style={{width:"100%",padding:"13px 16px",background:bgCard,border:`1.5px solid ${brd}`,borderRadius:12,color:clr,fontFamily:"'Nunito',sans-serif",fontSize:16,outline:"none",boxSizing:"border-box"}}/>
-            </div>
-            <button onClick={sendCode} disabled={loginPhone.length<10} style={{width:"100%",background:loginPhone.length>=10?YELLOW:"#333",color:loginPhone.length>=10?DARK:MUTED,border:"none",padding:14,borderRadius:14,fontFamily:"'Nunito',sans-serif",fontSize:14,fontWeight:900,cursor:loginPhone.length>=10?"pointer":"not-allowed"}}>📲 Получить код в WhatsApp</button>
-          </>
-        ):(
-          <>
-            <div style={{textAlign:"center",marginBottom:28}}>
-              <div style={{fontSize:50,marginBottom:12}}>💬</div>
-              <div style={{fontSize:20,fontWeight:900,marginBottom:8}}>Введите код</div>
-              <div style={{fontSize:13,color:mutedC,lineHeight:1.6}}>Код отправлен в WhatsApp на<br/><strong style={{color:clr}}>{loginPhone}</strong></div>
-            </div>
-            <div style={{marginBottom:16}}>
-              <div style={{fontSize:9,letterSpacing:2,color:mutedC,fontWeight:700,marginBottom:6}}>КОД ИЗ WHATSAPP</div>
-              <input type="number" value={loginCode} onChange={e=>setLoginCode(e.target.value)} placeholder="1234" maxLength={4}
-                style={{width:"100%",padding:"13px 16px",background:bgCard,border:`1.5px solid ${brd}`,borderRadius:12,color:clr,fontFamily:"'Nunito',sans-serif",fontSize:28,fontWeight:900,outline:"none",boxSizing:"border-box",textAlign:"center",letterSpacing:10}}/>
-            </div>
-            <button onClick={verifyCode} disabled={loginCode.length<4} style={{width:"100%",background:loginCode.length>=4?YELLOW:"#333",color:loginCode.length>=4?DARK:MUTED,border:"none",padding:14,borderRadius:14,fontFamily:"'Nunito',sans-serif",fontSize:14,fontWeight:900,cursor:loginCode.length>=4?"pointer":"not-allowed",marginBottom:10}}>✅ Подтвердить</button>
-            <button onClick={()=>setLoginStep("phone")} style={{width:"100%",background:"transparent",color:mutedC,border:`1px solid ${brd}`,padding:12,borderRadius:14,fontFamily:"'Nunito',sans-serif",fontSize:13,fontWeight:700,cursor:"pointer"}}>← Изменить номер</button>
-          </>
+        ) : (
+          <LoginForm
+            bg={bg} bgCard={bgCard} clr={clr} brd={brd} mutedC={mutedC}
+            onLogin={async (ph:string, nm:string) => {
+              // Ищем клиента в Firebase по телефону
+              try {
+                const r = await fetch(`${FS_BASE}/clients/${ph.replace(/\D/g,"")}?key=${FB_CONFIG.apiKey}`);
+                if (r.ok) {
+                  const d = await r.json();
+                  const obj = d.fields ? Object.fromEntries(Object.entries(d.fields).map(([k,v]:any)=>[k,(v.stringValue||v.integerValue||v.booleanValue||"")])) : {};
+                  const client = {name: obj.name||nm, phone:ph.replace(/\D/g,""), orders:Number(obj.orders)||0, bonusPoints:Number(obj.bonusPoints)||0, registeredAt:obj.registeredAt||new Date().toLocaleDateString("ru-RU")};
+                  // Обновляем имя если новое
+                  if (nm && nm !== obj.name) {
+                    await fetch(`${FS_BASE}/clients/${ph.replace(/\D/g,"")}?key=${FB_CONFIG.apiKey}`, {
+                      method:"PATCH", headers:{"Content-Type":"application/json"},
+                      body: JSON.stringify({fields:{name:{stringValue:nm},phone:{stringValue:ph.replace(/\D/g,"")},orders:{integerValue:String(client.orders)},bonusPoints:{integerValue:String(client.bonusPoints)},registeredAt:{stringValue:client.registeredAt}}})
+                    });
+                  }
+                  setCurrentClient(client);
+                  setName(client.name);
+                  setPhone(client.phone);
+                  localStorage.setItem("paksushi_current_client", JSON.stringify(client));
+                  setScreen("profile");
+                } else {
+                  // Новый клиент — создаём
+                  const newClient = {name:nm, phone:ph.replace(/\D/g,""), orders:0, bonusPoints:0, registeredAt:new Date().toLocaleDateString("ru-RU")};
+                  await fetch(`${FS_BASE}/clients/${ph.replace(/\D/g,"")}?key=${FB_CONFIG.apiKey}`, {
+                    method:"PATCH", headers:{"Content-Type":"application/json"},
+                    body: JSON.stringify({fields:{name:{stringValue:nm},phone:{stringValue:ph.replace(/\D/g,"")},orders:{integerValue:"0"},bonusPoints:{integerValue:"0"},registeredAt:{stringValue:newClient.registeredAt}}})
+                  });
+                  setCurrentClient(newClient);
+                  setName(nm); setPhone(ph.replace(/\D/g,""));
+                  localStorage.setItem("paksushi_current_client", JSON.stringify(newClient));
+                  setScreen("profile");
+                }
+              } catch(e) {
+                console.error(e);
+                // Fallback — локальное сохранение
+                const client = {name:nm, phone:ph.replace(/\D/g,""), orders:0, bonusPoints:0, registeredAt:new Date().toLocaleDateString("ru-RU")};
+                setCurrentClient(client); setName(nm); setPhone(ph.replace(/\D/g,""));
+                localStorage.setItem("paksushi_current_client", JSON.stringify(client));
+                setScreen("profile");
+              }
+            }}
+          />
         )}
       </div>
     </div>
   );
 
-  // ─── PROFILE ───
   if (screen==="profile"&&currentClient) return (
     <div style={{fontFamily:"'Nunito',sans-serif",background:bg,minHeight:"100vh",color:clr}}>
       <style>{css}</style>

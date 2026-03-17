@@ -455,12 +455,10 @@ export default function App() {
   // Скидка 20/30/35% считается от ВСЕЙ еды (суши+пицца+бургеры+др)
   const discount         = hasSushiOrPizza ? getDiscount(totalFood) : DISCOUNT_TIERS[3];
   const discountAmt      = hasSushiOrPizza ? Math.round(totalFood * discount.pct / 100) : 0;
-  const discountSushiAmt = discountAmt; // для совместимости с UI
-  const discountOtherAmt = 0;
   const totalFinal       = totalRaw - discountAmt;
   const cartCount        = useMemo(() => Object.values(order).reduce((s,q)=>s+q,0), [order]);
   const nextTier         = DISCOUNT_TIERS.find(t=>t.pct>discount.pct&&t.min>totalFood);
-  const progress    = Math.min(100,(totalDiscountable/20000)*100);
+  const progress    = hasSushiOrPizza ? Math.min(100,(totalFood/20000)*100) : 0;
 
   const filtered = useMemo(() => {
     if (!search.trim()) return null;
@@ -512,8 +510,7 @@ export default function App() {
       foodLines ? `Еда:\n${foodLines}` : "",
       drinkLines ? `Напитки:\n${drinkLines}` : "",
       ``,
-      discountSushiAmt > 0 ? `Скидка суши ${discount.label}: -${discountSushiAmt.toLocaleString("ru-RU")} T` : "",
-      discountOtherAmt > 0 ? `Скидка бургеры 10%: -${discountOtherAmt.toLocaleString("ru-RU")} T` : "",
+      discountAmt > 0 ? `Скидка ${discount.label} на весь заказ: -${discountAmt.toLocaleString("ru-RU")} T` : "",
       `ИТОГО: ${totalFinal.toLocaleString("ru-RU")} T`,
       comment ? `Комментарий: ${comment}` : "",
       ``,

@@ -445,10 +445,11 @@ export default function App() {
   const allItems = useMemo(() => Object.values(menuData).flat(), [menuData]);
   const cartItems   = useMemo(() => Object.entries(order).filter(([,q])=>q>0).map(([id,qty])=>({...allItems.find(i=>i.id===+id)!,qty})), [order,allItems]);
   // ─── Суммы по категориям ───
-  // Суши + Пицца (скидка 20/30/35%)
-  const totalSushiPizza  = useMemo(() => cartItems.filter(i=>!i.isDrink&&!i.noDiscount).reduce((s,i)=>s+i.price*i.qty,0), [cartItems]);
-  // Бургеры + Лаваш + Крылышки + Снэки (скидка 10% от 10 000 ₸)
-  const totalOther       = useMemo(() => cartItems.filter(i=>!i.isDrink&&!!i.noDiscount).reduce((s,i)=>s+i.price*i.qty,0), [cartItems]);
+  // Суши (ID 1-20) + Пицца (ID 41-45) → скидка 20/30/35%
+  const isSushiOrPizza   = (id:number) => (id>=1&&id<=20)||(id>=41&&id<=45);
+  // Бургеры (21-26) + Лаваш (27-30) + Крылья (31-34) + Снэки (35-40) → скидка 10% от 10 000 ₸
+  const totalSushiPizza  = useMemo(() => cartItems.filter(i=>!i.isDrink&&isSushiOrPizza(i.id)).reduce((s,i)=>s+i.price*i.qty,0), [cartItems]);
+  const totalOther       = useMemo(() => cartItems.filter(i=>!i.isDrink&&!isSushiOrPizza(i.id)).reduce((s,i)=>s+i.price*i.qty,0), [cartItems]);
   const totalFood        = totalSushiPizza + totalOther;
   const totalDrinks      = useMemo(() => cartItems.filter(i=>i.isDrink).reduce((s,i)=>s+i.price*i.qty,0), [cartItems]);
   const totalRaw         = totalFood + totalDrinks;
@@ -1549,7 +1550,7 @@ export default function App() {
             {search&&<div style={{fontSize:12,fontWeight:800,color:YELLOW,letterSpacing:2,margin:"16px 0 8px"}}>{cat}</div>}
             <div style={{background:bgCard,borderRadius:16,overflow:"hidden",border:`1px solid ${brd}`,marginBottom:16}}>
               {items.map((item,idx)=>{
-                const q=order[item.id]||0, isActive=q>0, isHit=HITS.has(item.id), showDiscount=!item.isDrink&&discountSushi.pct>0;
+                const q=order[item.id]||0, isActive=q>0, isHit=HITS.has(item.id), showDiscount=!item.isDrink&&isSushiOrPizza(item.id)&&discountSushi.pct>0 || !item.isDrink&&!isSushiOrPizza(item.id)&&discountOtherAmt>0;
                 return (
                   <div key={item.id} onClick={()=>setSelectedItem(item)}
                     style={{display:"flex",alignItems:"center",padding:"10px 16px",borderBottom:idx<items.length-1?`1px solid ${brd}`:"none",gap:10,background:isActive?(darkMode?"#1e1a00":"#fffbe6"):"transparent",transition:"background 0.2s",cursor:"pointer"}}>

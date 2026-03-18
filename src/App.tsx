@@ -531,7 +531,9 @@ export default function App() {
       items: cartItems.map(i=>({id:i.id,name:i.name,price:i.price,qty:i.qty,isDrink:!!i.isDrink})),
       total: totalFinal,
       discount: discountAmt,
-      discountPct: discount.pct,
+      discountSushi: discountSushiAmt,
+      discountOther: discountOtherAmt,
+      discountPct: discountSushi.pct,
       clientPhone: currentClient?.phone || null,
       date: new Date().toLocaleString("ru-RU", {day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"}),
       status: "new",
@@ -654,7 +656,7 @@ export default function App() {
               </div>
               <div style={{textAlign:"right",flexShrink:0,marginLeft:12}}>
                 {!selectedItem.isDrink&&discountSushi.pct>0&&<div style={{fontSize:12,color:mutedC,textDecoration:"line-through"}}>{selectedItem.price.toLocaleString("ru-RU")} ₸</div>}
-                <div style={{fontSize:22,fontWeight:900,color:YELLOW}}>{(!selectedItem.isDrink&&discountSushi.pct>0?Math.round(selectedItem.price*(1-discount.pct/100)):selectedItem.price).toLocaleString("ru-RU")} ₸</div>
+                <div style={{fontSize:22,fontWeight:900,color:YELLOW}}>{(!selectedItem.isDrink&&discountSushi.pct>0?Math.round(selectedItem.price*(1-discountSushi.pct/100)):selectedItem.price).toLocaleString("ru-RU")} ₸</div>
               </div>
             </div>
             {selectedItem.desc&&<div style={{fontSize:14,color:mutedC,lineHeight:1.7,marginBottom:20}}>{selectedItem.desc}</div>}
@@ -664,7 +666,7 @@ export default function App() {
                 {q>0&&<span style={{fontSize:18,fontWeight:900,color:YELLOW,minWidth:24,textAlign:"center"}}>{q}</span>}
               </div>
               <button onClick={()=>change(selectedItem.id,1)} style={{flex:2,background:YELLOW,color:DARK,border:"none",padding:"13px",borderRadius:14,fontFamily:"'Nunito',sans-serif",fontSize:15,fontWeight:900,cursor:"pointer"}}>
-                {q>0?"+ Ещё один":"+ В корзину"} — {(!selectedItem.isDrink&&discountSushi.pct>0?Math.round(selectedItem.price*(1-discount.pct/100)):selectedItem.price).toLocaleString("ru-RU")} ₸
+                {q>0?"+ Ещё один":"+ В корзину"} — {(!selectedItem.isDrink&&discountSushi.pct>0?Math.round(selectedItem.price*(1-discountSushi.pct/100)):selectedItem.price).toLocaleString("ru-RU")} ₸
               </button>
             </div>
           </div>
@@ -1508,12 +1510,12 @@ export default function App() {
           <div style={{background:darkMode?"#2a2a2a":"#e5e5e5",borderRadius:8,height:7,overflow:"hidden",position:"relative"}}>
             <div style={{position:"absolute",left:"30%",top:0,bottom:0,width:1,background:darkMode?"#444":"#ccc"}}/>
             <div style={{position:"absolute",left:"50%",top:0,bottom:0,width:1,background:darkMode?"#444":"#ccc"}}/>
-            <div style={{width:`${progress}%`,height:"100%",background:discount.pct>=30?"#4cff91":YELLOW,borderRadius:8,transition:"width 0.35s ease"}}/>
+            <div style={{width:`${progress}%`,height:"100%",background:discountSushi.pct>=30?"#4cff91":YELLOW,borderRadius:8,transition:"width 0.35s ease"}}/>
           </div>
           <div style={{display:"flex",justifyContent:"space-between",marginTop:4}}>
             <span style={{fontSize:9,color:darkMode?"#444":"#bbb",fontWeight:700}}>0</span>
-            <span style={{fontSize:9,color:discount.pct>=20?YELLOW:mutedC,fontWeight:700}}>6К −20%</span>
-            <span style={{fontSize:9,color:discount.pct>=30?"#4cff91":mutedC,fontWeight:700}}>10К −30%</span>
+            <span style={{fontSize:9,color:discountSushi.pct>=20?YELLOW:mutedC,fontWeight:700}}>6К −20%</span>
+            <span style={{fontSize:9,color:discountSushi.pct>=30?"#4cff91":mutedC,fontWeight:700}}>10К −30%</span>
             <span style={{fontSize:9,color:discountSushi.pct===35?"#4cff91":mutedC,fontWeight:700}}>20К −35%</span>
           </div>
         </div>
@@ -1563,7 +1565,7 @@ export default function App() {
                       <div style={{display:"flex",alignItems:"center",gap:6,marginTop:3}}>
                         {item.note&&<span style={{fontSize:10,color:mutedC}}>{item.note}</span>}
                         {item.note&&<span style={{fontSize:10,color:darkMode?"#333":"#ccc"}}>·</span>}
-                        {showDiscount?(<><span style={{fontSize:11,color:darkMode?"#444":"#bbb",textDecoration:"line-through"}}>{item.price.toLocaleString("ru-RU")} ₸</span><span style={{fontSize:13,fontWeight:800,color:"#4cff91"}}>{Math.round(item.price*(1-discount.pct/100)).toLocaleString("ru-RU")} ₸</span></>):(<span style={{fontSize:13,fontWeight:800,color:isActive?YELLOW:mutedC}}>{item.price.toLocaleString("ru-RU")} ₸</span>)}
+                        {showDiscount?(<><span style={{fontSize:11,color:darkMode?"#444":"#bbb",textDecoration:"line-through"}}>{item.price.toLocaleString("ru-RU")} ₸</span><span style={{fontSize:13,fontWeight:800,color:"#4cff91"}}>{Math.round(item.price*(1-discountSushi.pct/100)).toLocaleString("ru-RU")} ₸</span></>):(<span style={{fontSize:13,fontWeight:800,color:isActive?YELLOW:mutedC}}>{item.price.toLocaleString("ru-RU")} ₸</span>)}
                       </div>
                       {item.desc&&<div style={{fontSize:10,color:mutedC,marginTop:2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{item.desc}</div>}
                     </div>

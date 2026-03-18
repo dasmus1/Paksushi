@@ -443,22 +443,26 @@ export default function App() {
 
   const allItems = useMemo(() => Object.values(menuData).flat(), [menuData]);
   const cartItems   = useMemo(() => Object.entries(order).filter(([,q])=>q>0).map(([id,qty])=>({...allItems.find(i=>i.id===+id)!,qty})), [order,allItems]);
-  // Суши + Пицца
+  // ─── Суммы по категориям ───
+  // Суши + Пицца (скидка 20/30/35%)
   const totalSushiPizza  = useMemo(() => cartItems.filter(i=>!i.isDrink&&!i.noDiscount).reduce((s,i)=>s+i.price*i.qty,0), [cartItems]);
-  // Бургеры + Лаваш + Крылышки + Снэки
+  // Бургеры + Лаваш + Крылышки + Снэки (скидка 10% от 10 000 ₸)
   const totalOther       = useMemo(() => cartItems.filter(i=>!i.isDrink&&!!i.noDiscount).reduce((s,i)=>s+i.price*i.qty,0), [cartItems]);
   const totalFood        = totalSushiPizza + totalOther;
   const totalDrinks      = useMemo(() => cartItems.filter(i=>i.isDrink).reduce((s,i)=>s+i.price*i.qty,0), [cartItems]);
   const totalRaw         = totalFood + totalDrinks;
-  // Скидка ТОЛЬКО если есть суши или пицца в корзине
-  const hasSushiOrPizza  = useMemo(() => cartItems.some(i=>!i.isDrink&&!i.noDiscount), [cartItems]);
-  // Скидка 20/30/35% считается от ВСЕЙ еды (суши+пицца+бургеры+др)
-  const discount         = hasSushiOrPizza ? getDiscount(totalFood) : DISCOUNT_TIERS[3];
-  const discountAmt      = hasSushiOrPizza ? Math.round(totalFood * discount.pct / 100) : 0;
+  // ─── Скидки ───
+  // Суши+Пицца: 20/30/35% от их суммы
+  const discountSushi    = getDiscount(totalSushiPizza);
+  const discountSushiAmt = Math.round(totalSushiPizza * discountSushi.pct / 100);
+  // Бургеры+др: 10% если их сумма >= 10 000 ₸ (независимо от суши)
+  const discountOtherAmt = totalOther >= 10000 ? Math.round(totalOther * 0.10) : 0;
+  // Итоговая скидка
+  const discountAmt      = discountSushiAmt + discountOtherAmt;
   const totalFinal       = totalRaw - discountAmt;
   const cartCount        = useMemo(() => Object.values(order).reduce((s,q)=>s+q,0), [order]);
-  const nextTier         = DISCOUNT_TIERS.find(t=>t.pct>discount.pct&&t.min>totalFood);
-  const progress    = hasSushiOrPizza ? Math.min(100,(totalFood/20000)*100) : 0;
+  const nextTier         = DISCOUNT_TIERS.find(t=>t.pct>discountSushi.pct&&t.min>totalSushiPizza);
+  const progress    = Math.min(100,(totalSushiPizza/20000)*100);
 
   const filtered = useMemo(() => {
     if (!search.trim()) return null;
@@ -510,7 +514,8 @@ export default function App() {
       foodLines ? `Еда:\n${foodLines}` : "",
       drinkLines ? `Напитки:\n${drinkLines}` : "",
       ``,
-      discountAmt > 0 ? `Скидка ${discount.label} на весь заказ: -${discountAmt.toLocaleString("ru-RU")} T` : "",
+      discountSushiAmt > 0 ? `Скидка суши+пицца ${discountSushi.label}: -${discountSushiAmt.toLocaleString("ru-RU")} T` : "",
+      discountOtherAmt > 0 ? `Скидка бургеры/лаваш -10%: -${discountOtherAmt.toLocaleString("ru-RU")} T` : "",
       `ИТОГО: ${totalFinal.toLocaleString("ru-RU")} T`,
       comment ? `Комментарий: ${comment}` : "",
       ``,
@@ -648,8 +653,8 @@ export default function App() {
                 {selectedItem.note&&<div style={{fontSize:12,color:"#5ab4e8",fontWeight:700}}>{selectedItem.note}</div>}
               </div>
               <div style={{textAlign:"right",flexShrink:0,marginLeft:12}}>
-                {!selectedItem.isDrink&&discount.pct>0&&<div style={{fontSize:12,color:mutedC,textDecoration:"line-through"}}>{selectedItem.price.toLocaleString("ru-RU")} ₸</div>}
-                <div style={{fontSize:22,fontWeight:900,color:YELLOW}}>{(!selectedItem.isDrink&&discount.pct>0?Math.round(selectedItem.price*(1-discount.pct/100)):selectedItem.price).toLocaleString("ru-RU")} ₸</div>
+                {!selectedItem.isDrink&&discountSushi.pct>0&&<div style={{fontSize:12,color:mutedC,textDecoration:"line-through"}}>{selectedItem.price.toLocaleString("ru-RU")} ₸</div>}
+                <div style={{fontSize:22,fontWeight:900,color:YELLOW}}>{(!selectedItem.isDrink&&discountSushi.pct>0?Math.round(selectedItem.price*(1-discount.pct/100)):selectedItem.price).toLocaleString("ru-RU")} ₸</div>
               </div>
             </div>
             {selectedItem.desc&&<div style={{fontSize:14,color:mutedC,lineHeight:1.7,marginBottom:20}}>{selectedItem.desc}</div>}
@@ -659,7 +664,7 @@ export default function App() {
                 {q>0&&<span style={{fontSize:18,fontWeight:900,color:YELLOW,minWidth:24,textAlign:"center"}}>{q}</span>}
               </div>
               <button onClick={()=>change(selectedItem.id,1)} style={{flex:2,background:YELLOW,color:DARK,border:"none",padding:"13px",borderRadius:14,fontFamily:"'Nunito',sans-serif",fontSize:15,fontWeight:900,cursor:"pointer"}}>
-                {q>0?"+ Ещё один":"+ В корзину"} — {(!selectedItem.isDrink&&discount.pct>0?Math.round(selectedItem.price*(1-discount.pct/100)):selectedItem.price).toLocaleString("ru-RU")} ₸
+                {q>0?"+ Ещё один":"+ В корзину"} — {(!selectedItem.isDrink&&discountSushi.pct>0?Math.round(selectedItem.price*(1-discount.pct/100)):selectedItem.price).toLocaleString("ru-RU")} ₸
               </button>
             </div>
           </div>
@@ -1372,7 +1377,8 @@ export default function App() {
             <div style={{fontSize:10,letterSpacing:2,color:mutedC,fontWeight:700,marginBottom:10}}>ИТОГО К ОПЛАТЕ</div>
             {totalFood>0&&<div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}><span style={{fontSize:13,color:mutedC}}>Еда</span><span style={{fontSize:13}}>{totalFood.toLocaleString("ru-RU")} ₸</span></div>}
             {totalDrinks>0&&<div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}><span style={{fontSize:13,color:mutedC}}>Напитки</span><span style={{fontSize:13}}>{totalDrinks.toLocaleString("ru-RU")} ₸</span></div>}
-            {discountAmt>0&&<div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}><span style={{fontSize:13,color:"#4cff91"}}>Скидка {discount.label} на всё</span><span style={{fontSize:13,color:"#4cff91"}}>−{discountAmt.toLocaleString("ru-RU")} ₸</span></div>}
+            {discountSushiAmt>0&&<div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}><span style={{fontSize:13,color:"#4cff91"}}>Скидка суши+пицца {discountSushi.label}</span><span style={{fontSize:13,color:"#4cff91"}}>−{discountSushiAmt.toLocaleString("ru-RU")} ₸</span></div>}
+            {discountOtherAmt>0&&<div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}><span style={{fontSize:13,color:"#4cff91"}}>Скидка бургеры/лаваш -10%</span><span style={{fontSize:13,color:"#4cff91"}}>−{discountOtherAmt.toLocaleString("ru-RU")} ₸</span></div>}
             {currentClient&&<div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}><span style={{fontSize:13,color:YELLOW}}>⭐ +{Math.floor(totalFinal/100)} бонусов</span><span style={{fontSize:11,color:mutedC}}>будет начислено</span></div>}
             <div style={{display:"flex",justifyContent:"space-between",paddingTop:10,borderTop:`1px solid ${YELLOW}44`,marginTop:6}}>
               <span style={{fontSize:15,fontWeight:800}}>К оплате</span>
@@ -1444,7 +1450,8 @@ export default function App() {
         <div style={{background:bgCard,borderRadius:14,padding:"14px 16px",border:`1px solid ${brd}`,marginBottom:20}}>
           {totalFood>0&&<div style={{display:"flex",justifyContent:"space-between",marginBottom:5}}><span style={{fontSize:12,color:mutedC}}>Еда</span><span style={{fontSize:12}}>{totalFood.toLocaleString("ru-RU")} ₸</span></div>}
           {totalDrinks>0&&<div style={{display:"flex",justifyContent:"space-between",marginBottom:5}}><span style={{fontSize:12,color:mutedC}}>Напитки</span><span style={{fontSize:12}}>{totalDrinks.toLocaleString("ru-RU")} ₸</span></div>}
-          {discountAmt>0&&<div style={{display:"flex",justifyContent:"space-between",marginBottom:3}}><span style={{fontSize:12,color:"#4cff91"}}>Скидка {discount.label} на всё</span><span style={{fontSize:12,color:"#4cff91"}}>−{discountAmt.toLocaleString("ru-RU")} ₸</span></div>}
+          {discountSushiAmt>0&&<div style={{display:"flex",justifyContent:"space-between",marginBottom:3}}><span style={{fontSize:12,color:"#4cff91"}}>Скидка суши+пицца {discountSushi.label}</span><span style={{fontSize:12,color:"#4cff91"}}>−{discountSushiAmt.toLocaleString("ru-RU")} ₸</span></div>}
+          {discountOtherAmt>0&&<div style={{display:"flex",justifyContent:"space-between",marginBottom:3}}><span style={{fontSize:12,color:"#4cff91"}}>Скидка бургеры/лаваш -10%</span><span style={{fontSize:12,color:"#4cff91"}}>−{discountOtherAmt.toLocaleString("ru-RU")} ₸</span></div>}
           <div style={{display:"flex",justifyContent:"space-between",paddingTop:10,borderTop:`1px solid ${YELLOW}44`,marginTop:4}}>
             <span style={{fontSize:14,fontWeight:800}}>ИТОГО</span>
             <span style={{fontSize:22,fontWeight:900,color:YELLOW}}>{totalFinal.toLocaleString("ru-RU")} ₸</span>
@@ -1474,20 +1481,28 @@ export default function App() {
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:12,marginBottom:10}}>
             <div>
               <div style={{fontSize:14,fontWeight:900,color:YELLOW,marginBottom:3}}>
-                {discount.pct===35?"🏆 Максимальная скидка 35%!":discount.pct===30?"🔥 Скидка 30% активна!":discount.pct===20?"🎉 Скидка 20% активна!":"🎯 Собери сет со скидкой"}
+                {discountSushi.pct===35?"Максимальная скидка 35%!":discountSushi.pct===30?"Скидка 30% активна!":discountSushi.pct===20?"Скидка 20% активна!":"Скидки на суши, пиццу и не только!"}
               </div>
               <div style={{fontSize:11,color:darkMode?"#aaa":"#888",lineHeight:1.6}}>
-                {!hasSushiOrPizza
-                  ?"Добавь суши или пиццу — и получи скидку на всё!"
-                  :discount.pct===35
-                  ?"Максимальная скидка -35% на весь заказ!"
+                {discountSushi.pct===35
+                  ?"Суши+Пицца: -35% · Бургеры/Лаваш/Крылья: "+(discountOtherAmt>0?"-10% активна":"от 10 000 ₸ -10%")
                   :nextTier
-                  ?`Ещё ${(nextTier.min-totalFood).toLocaleString("ru-RU")} ₸ до скидки -${nextTier.label} на всё`
-                  :"Добавь суши/пиццу: 6К=-20% · 10К=-30% · 20К=-35% на всё"}
+                  ?`Суши+Пицца: ещё ${(nextTier.min-totalSushiPizza).toLocaleString("ru-RU")} ₸ до -${nextTier.label}`
+                  :"Суши+Пицца: 6К=-20% · 10К=-30% · 20К=-35%"}
               </div>
+              {totalOther>0&&totalOther<10000&&(
+                <div style={{fontSize:10,color:"#ffaa00",marginTop:3}}>
+                  Бургеры/Лаваш/Крылья: {(10000-totalOther).toLocaleString("ru-RU")} ₸ до скидки -10%
+                </div>
+              )}
+              {discountOtherAmt>0&&(
+                <div style={{fontSize:10,color:"#4cff91",marginTop:3}}>
+                  Бургеры/Лаваш/Крылья: -10% активна (-{discountOtherAmt.toLocaleString("ru-RU")} ₸)
+                </div>
+              )}
             </div>
             <div style={{flexShrink:0}}>
-              {discount.pct>0?<div style={{fontSize:11,background:"#4cff9122",border:"1px solid #4cff9144",color:"#4cff91",padding:"4px 10px",borderRadius:20,fontWeight:800}}>−{discountAmt.toLocaleString("ru-RU")} ₸</div>:<div style={{fontSize:11,color:mutedC}}>{hasSushiOrPizza?totalFood.toLocaleString("ru-RU"):"—"} / 6 000 ₸</div>}
+              {discountSushi.pct>0?<div style={{fontSize:11,background:"#4cff9122",border:"1px solid #4cff9144",color:"#4cff91",padding:"4px 10px",borderRadius:20,fontWeight:800}}>−{discountAmt.toLocaleString("ru-RU")} ₸</div>:<div style={{fontSize:11,color:mutedC}}>{totalSushiPizza>0?totalFood.toLocaleString("ru-RU"):"—"} / 6 000 ₸</div>}
             </div>
           </div>
           <div style={{background:darkMode?"#2a2a2a":"#e5e5e5",borderRadius:8,height:7,overflow:"hidden",position:"relative"}}>
@@ -1499,7 +1514,7 @@ export default function App() {
             <span style={{fontSize:9,color:darkMode?"#444":"#bbb",fontWeight:700}}>0</span>
             <span style={{fontSize:9,color:discount.pct>=20?YELLOW:mutedC,fontWeight:700}}>6К −20%</span>
             <span style={{fontSize:9,color:discount.pct>=30?"#4cff91":mutedC,fontWeight:700}}>10К −30%</span>
-            <span style={{fontSize:9,color:discount.pct===35?"#4cff91":mutedC,fontWeight:700}}>20К −35%</span>
+            <span style={{fontSize:9,color:discountSushi.pct===35?"#4cff91":mutedC,fontWeight:700}}>20К −35%</span>
           </div>
         </div>
       </div>
@@ -1531,7 +1546,7 @@ export default function App() {
             {search&&<div style={{fontSize:12,fontWeight:800,color:YELLOW,letterSpacing:2,margin:"16px 0 8px"}}>{cat}</div>}
             <div style={{background:bgCard,borderRadius:16,overflow:"hidden",border:`1px solid ${brd}`,marginBottom:16}}>
               {items.map((item,idx)=>{
-                const q=order[item.id]||0, isActive=q>0, isHit=HITS.has(item.id), showDiscount=!item.isDrink&&hasSushiOrPizza&&discount.pct>0;
+                const q=order[item.id]||0, isActive=q>0, isHit=HITS.has(item.id), showDiscount=!item.isDrink&&discountSushi.pct>0;
                 return (
                   <div key={item.id} onClick={()=>setSelectedItem(item)}
                     style={{display:"flex",alignItems:"center",padding:"10px 16px",borderBottom:idx<items.length-1?`1px solid ${brd}`:"none",gap:10,background:isActive?(darkMode?"#1e1a00":"#fffbe6"):"transparent",transition:"background 0.2s",cursor:"pointer"}}>
@@ -1543,7 +1558,7 @@ export default function App() {
                       <div style={{display:"flex",alignItems:"center",gap:5,flexWrap:"wrap"}}>
                         <span style={{fontSize:13,fontWeight:700,color:isActive?clr:darkMode?"#ddd":"#333"}}>{item.name}</span>
                         {item.isDrink&&<span style={{fontSize:9,background:"#1a2a3a",border:"1px solid #2a4a5a",color:"#5ab4e8",padding:"1px 6px",borderRadius:10,fontWeight:700}}>напиток</span>}
-                        {showDiscount&&isActive&&<span style={{fontSize:9,background:"#0a2a0a",border:"1px solid #1a4a1a",color:"#4cff91",padding:"1px 6px",borderRadius:10,fontWeight:700}}>−{discount.label}</span>}
+                        {showDiscount&&isActive&&<span style={{fontSize:9,background:"#0a2a0a",border:"1px solid #1a4a1a",color:"#4cff91",padding:"1px 6px",borderRadius:10,fontWeight:700}}>−{discountSushi.label}</span>}
                       </div>
                       <div style={{display:"flex",alignItems:"center",gap:6,marginTop:3}}>
                         {item.note&&<span style={{fontSize:10,color:mutedC}}>{item.note}</span>}
@@ -1576,9 +1591,9 @@ export default function App() {
             </div>
           ):(
             <button onClick={()=>{if(isOpen)setScreen("checkout");}} style={{width:"100%",background:isOpen?YELLOW:"#444",color:DARK,border:"none",padding:"13px 20px",borderRadius:16,cursor:isOpen?"pointer":"not-allowed",fontFamily:"'Nunito',sans-serif",fontSize:15,fontWeight:900,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-              <span>{!isOpen?"😴 Сейчас закрыто":discount.pct>0?`🔥 Оформить со скидкой ${discount.label}!`:"🛒 Оформить заказ"}</span>
+              <span>{!isOpen?"😴 Сейчас закрыто":discountSushi.pct>0?`🔥 Оформить со скидкой ${discountSushi.label}!`:"🛒 Оформить заказ"}</span>
               <div style={{textAlign:"right"}}>
-                {discount.pct>0&&<div style={{fontSize:10,opacity:0.6,textDecoration:"line-through"}}>{totalRaw.toLocaleString("ru-RU")} ₸</div>}
+                {discountSushi.pct>0&&<div style={{fontSize:10,opacity:0.6,textDecoration:"line-through"}}>{totalRaw.toLocaleString("ru-RU")} ₸</div>}
                 <div style={{fontSize:15,fontWeight:900}}>{(totalRaw-discountAmt).toLocaleString("ru-RU")} ₸</div>
               </div>
             </button>
